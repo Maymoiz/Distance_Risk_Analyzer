@@ -160,8 +160,6 @@ Add a dedicated emergency button that:
 Moisha Ndlovu  
 Frontend Developer • Data Science & Analytics Student • AI Learning Tools Builder
 Pretoria, South Africa
+
 --------------------------------------------------------------------------------------------------------------------------
 
-Optional: Emergency Button
-
-Breadboard + Jumper Wires
