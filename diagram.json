@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "author": "Virus Spread Simulator",
+  "author": "Moisha",
   "editor": "wokwi",
   "parts": [
     { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": 0, "left": 0, "attrs": {} },
@@ -52,7 +52,21 @@
       "id": "btnReset",
       "top": 188.6,
       "left": 297.6,
-      "attrs": { "color": "red", "label": "Reset" }
+      "attrs": { "color": "yellow", "label": "Reset", "xray": "1" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": 265.4,
+      "left": 297.6,
+      "attrs": { "color": "blue", "xray": "1" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn2",
+      "top": 332.6,
+      "left": 297.6,
+      "attrs": { "color": "red", "xray": "1" }
     }
   ],
   "connections": [
@@ -71,8 +85,8 @@
     [ "esp:D21", "display1:SDA", "green", [] ],
     [ "esp:GND.1", "btnReset:B", "black", [ "v-50" ] ],
     [ "esp:D4", "btnReset:A", "blue", [] ],
-    [ "btnReset:1.l", "esp:D4", "green", [ "h-10", "v-40.2" ] ],
-    [ "btnReset:2.l", "esp:GND.1", "green", [ "h-38.8", "v-88" ] ],
+    [ "btnReset:1.l", "esp:D4", "cyan", [ "h-10", "v-40.2" ] ],
+    [ "btnReset:2.l", "esp:GND.1", "purple", [ "h-38.8", "v-88" ] ],
     [ "green:C", "esp:GND.1", "black", [ "v403.2", "h566.8", "v-96", "h-9.6" ] ],
     [ "yellow:C", "esp:GND.1", "black", [ "v432", "h470.8", "v-124.8" ] ],
     [ "pir1:GND", "esp:GND.1", "black", [ "v50.4", "h197.96", "v201.6" ] ],
@@ -80,7 +94,12 @@
     [ "pir1:OUT", "esp:D19", "green", [ "v67.2", "h191.86", "v105.6" ] ],
     [ "display1:GND", "esp:GND.1", "black", [ "v-57.1", "h-134.2", "v412.8", "h19.2" ] ],
     [ "buzzer1:2", "esp:D27", "green", [ "v201.6", "h9.2" ] ],
-    [ "buzzer1:1", "esp:GND.1", "green", [ "v345.6", "h316.8", "v-96", "h-9.6" ] ]
+    [ "buzzer1:1", "esp:GND.1", "green", [ "v345.6", "h316.8", "v-96", "h-9.6" ] ],
+    [ "btn1:1.l", "esp:D15", "blue", [ "h-96", "v-9.6" ] ],
+    [ "btn1:2.l", "esp:GND.1", "magenta", [ "h-115.2", "v-9.4" ] ],
+    [ "btn2:1.l", "esp:D2", "yellow", [ "h-57.6", "v-9.6" ] ],
+    [ "btn2:2.l", "esp:GND.1", "white", [ "h-76.8", "v-19" ] ]
   ],
   "dependencies": {}
+}
 }
