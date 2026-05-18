@@ -20,12 +20,6 @@ bool active = false;
 bool emergency = false;
 float distance = 0;
 unsigned long lcdTimer = 0;
-<<<<<<< HEAD
-
-void setup() {
-  lcd.begin(16, 2);
-  
-=======
 
 // CSV or Human-readable mode
 bool csvMode = false;
@@ -43,17 +37,11 @@ void setup() {
   Serial.begin(9600);
   Serial.println("System Booting...");
 
->>>>>>> cf1ccf64362cf4573aac6a395b047450ab9bf789
   // LED & Buzzer Setup
   pinMode(RED_LED, OUTPUT);
   pinMode(YELLOW_LED, OUTPUT);
   pinMode(GREEN_LED, OUTPUT);
   pinMode(BUZZER, OUTPUT);
-<<<<<<< HEAD
-  
-=======
-
->>>>>>> cf1ccf64362cf4573aac6a395b047450ab9bf789
   // Input Setup
   pinMode(PIR_PIN, INPUT);
   pinMode(CONFIRM_BTN, INPUT_PULLUP);
@@ -63,11 +51,8 @@ void setup() {
   lcd.print("SYSTEM BOOTING");
   delay(1000);
   lcd.clear();
-<<<<<<< HEAD
-=======
 
   Serial.println("System Ready.");
->>>>>>> cf1ccf64362cf4573aac6a395b047450ab9bf789
 }
 
 float getDistance() {
@@ -80,9 +65,6 @@ float getDistance() {
 
   pinMode(ULTRASONIC_SIG, INPUT);
   long duration = pulseIn(ULTRASONIC_SIG, HIGH);
-<<<<<<< HEAD
-  return duration * 0.034 / 2;
-=======
 
   if (duration == 0) return 999;
 
@@ -95,13 +77,15 @@ float getDistance() {
 void logData(const char* stateName, bool motion) {
   unsigned long t = millis();
 
-  if (csvMode) {
-    // CSV: time,distance,pir,state
-    Serial.print(t); Serial.print(",");
-    Serial.print(distance); Serial.print(",");
-    Serial.print(motion); Serial.print(",");
-    Serial.println(stateName);
-  } else {
+ bool csvMode = true;  // make sure this is true
+
+void logData(const char* stateName, bool motion) {
+  unsigned long t = millis();
+  Serial.print(t); Serial.print(",");
+  Serial.print(distance); Serial.print(",");
+  Serial.print(motion); Serial.print(",");
+  Serial.println(stateName);
+}else{
     // Color-coded readable output
     Serial.print(CYAN);
     Serial.print("["); Serial.print(t); Serial.print(" ms] ");
@@ -186,22 +170,15 @@ void runMonitoringMode() {
   }
 
   logData("MONITORING", motion);
->>>>>>> cf1ccf64362cf4573aac6a395b047450ab9bf789
 }
 
 // ----------------------
 // MAIN LOOP
 // ----------------------
 void loop() {
-<<<<<<< HEAD
-  // 1. Check Buttons (LOW = Pressed)
-  if (digitalRead(CONFIRM_BTN) == LOW) active = true;
-  if (digitalRead(EMERGENCY_BTN) == LOW) emergency = true;
-=======
   if (digitalRead(CONFIRM_BTN) == LOW) active = true;
   if (digitalRead(EMERGENCY_BTN) == LOW) emergency = true;
 
->>>>>>> cf1ccf64362cf4573aac6a395b047450ab9bf789
   if (digitalRead(RESET_BTN) == LOW) {
     active = false;
     emergency = false;
@@ -212,10 +189,6 @@ void loop() {
     lcd.clear();
   }
 
-<<<<<<< HEAD
-  // 2. Logic Branches
-=======
->>>>>>> cf1ccf64362cf4573aac6a395b047450ab9bf789
   if (emergency) {
     runEmergencyMode();
   } else if (!active) {
