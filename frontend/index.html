@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Distance Analyzer Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+  <!-- LOADING SCREEN -->
+  <div id="loader" class="loader">
+    <div class="spinner"></div>
+    <p>Initializing Dashboard...</p>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav>
+    <div class="brand">Distance Risk Analyzer</div>
+    <div class="nav-actions">
+      <span id="deviceStatus" class="status-badge offline">● Disconnected</span>
+      <button id="themeToggle">🌙</button>
+      <button id="settingsBtn">⚙️</button>
+      <button id="connectBtn">Connect</button>
+    </div>
+  </nav>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <a class="active">Dashboard</a>
+    <a id="historyBtn">History</a>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main>
+
+    <!-- HERO -->
+    <section class="hero">
+      <h1>Live Monitoring</h1>
+      <p>Real‑time distance, motion, and system state visualization.</p>
+    </section>
+
+
+    <!-- DATA CARDS -->
+    <div class="grid">
+      <div class="card">
+        <h3>Distance</h3>
+        <div id="distanceVal" class="value">-- cm</div>
+      </div>
+
+      <div class="card">
+        <h3>PIR Motion</h3>
+        <div id="pirVal" class="value">--</div>
+      </div>
+
+      <div class="card">
+        <h3>System State</h3>
+        <div id="stateVal" class="value">--</div>
+      </div>
+    </div>
+    <!-- LIVE CHART -->
+    <div class="card">
+      <h2>Live Distance Chart</h2>
+      <canvas id="distanceChart" height="120"></canvas>
+    </div>
+
+  </main>
+
+  <!-- HISTORY DRAWER -->
+  <div id="historyDrawer" class="drawer">
+    <h2>Connection History</h2>
+    <ul id="historyList"></ul>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <h2>Settings</h2>
+
+      <label>Alert Threshold (cm)</label>
+      <input type="number" id="thresholdInput" value="50">
+
+      <label>Chart Smoothing</label>
+      <input type="range" id="smoothInput" min="0" max="1" step="0.1" value="0.3">
+
+      <button id="saveSettings">Save</button>
+      <button id="closeSettings" class="close-btn">Close</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script src="chart.js"></script>
+
+</body>
+</html>
+
