@@ -1,244 +1,199 @@
-
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <LiquidCrystal.h>
 
 // RS, E, D4, D5, D6, D7
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
-// OLED Configuration
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 64
-#define OLED_RESET -1
-#define OLED_ADDR 0x3C
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // Pin Definitions
-#define TRIG_PIN 5
-#define ECHO_PIN 18
-#define PIR_PIN 19
-#define GREEN_LED 13
-#define YELLOW_LED 12
-#define RED_LED 14
-#define BUZZER 27
-#define RESET_BTN 4
+#define ULTRASONIC_SIG 13
+#define PIR_PIN 8
+#define RED_LED A0
+#define YELLOW_LED A4
+#define GREEN_LED A5
+#define BUZZER 9
 
-// Simulation Variables
-int totalExposures = 0;
-int highRiskCount = 0;
-int warningCount = 0;
-int safeCount = 0;
-unsigned long simulationStartTime = 0;
-bool personPresent = false;
-float currentDistance = 0;
-float previousDistance = 0;
+#define CONFIRM_BTN A1
+#define RESET_BTN A2
+#define EMERGENCY_BTN A3
 
-// Debounce
-unsigned long lastBtnPress = 0;
-const int debounceDelay = 300;
+// System State Variables
+bool active = false;
+bool emergency = false;
+float distance = 0;
+unsigned long lcdTimer = 0;
 
-// For tracking state changes
-String lastStatus = "";
+// CSV or Human-readable mode
+bool csvMode = false;
+
+// ANSI Colors
+#define RED     "\033[31m"
+#define GREEN   "\033[32m"
+#define YELLOW  "\033[33m"
+#define CYAN    "\033[36m"
+#define RESET   "\033[0m"
 
 void setup() {
-  Serial.begin(115200);
+  lcd.begin(16, 2);
 
-  // Initialize OLED
-  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-    Serial.println("OLED not found!");
-  }
+  Serial.begin(9600);
+  Serial.println("System Booting...");
 
-  // Setup pins
-  pinMode(TRIG_PIN, OUTPUT);
-  pinMode(ECHO_PIN, INPUT);
-  pinMode(PIR_PIN, INPUT);
-  pinMode(GREEN_LED, OUTPUT);
+  // LED & Buzzer Setup
+  pinMode(RED_LED, OUTPUT);
   pinMode(YELLOW_LED, OUTPUT);
   pinMode(GREEN_LED, OUTPUT);
   pinMode(BUZZER, OUTPUT);
+
+  // Input Setup
+  pinMode(PIR_PIN, INPUT);
+  pinMode(CONFIRM_BTN, INPUT_PULLUP);
   pinMode(RESET_BTN, INPUT_PULLUP);
+  pinMode(EMERGENCY_BTN, INPUT_PULLUP);
 
-  // Welcome screen
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(10, 10);
-  display.println("VIRUS SPREAD");
-  display.setCursor(5, 25);
-  display.println("SIMULATOR v1.0");
-  display.setCursor(15, 45);
-  display.println("Starting...");
-  display.display();
-  delay(2000);
+  lcd.print("SYSTEM BOOTING");
+  delay(1000);
+  lcd.clear();
 
-  simulationStartTime = millis();
-  Serial.println("Virus Spread Simulator Started!");
-  Serial.println("Drag the HC-SR04 slider to change distance!");
-  Serial.println("-------------------------------------------");
+  Serial.println("System Ready.");
 }
 
 float getDistance() {
-  digitalWrite(TRIG_PIN, LOW);
+  pinMode(ULTRASONIC_SIG, OUTPUT);
+  digitalWrite(ULTRASONIC_SIG, LOW);
   delayMicroseconds(2);
-  digitalWrite(TRIG_PIN, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(TRIG_PIN, LOW);
+  digitalWrite(ULTRASONIC_SIG, HIGH);
+  delayMicroseconds(5);
+  digitalWrite(ULTRASONIC_SIG, LOW);
 
-  long duration = pulseIn(ECHO_PIN, HIGH, 30000); // 30ms timeout
-  if (duration == 0) return 999; // No echo
+  pinMode(ULTRASONIC_SIG, INPUT);
+  long duration = pulseIn(ULTRASONIC_SIG, HIGH);
 
-  float distance = duration * 0.034 / 2;
+  if (duration == 0) return 999;
 
-  // Noise filtering
-  if (previousDistance > 0 && abs(distance - previousDistance) > 100) {
-    return previousDistance;
-  }
-
-  return distance;
+  return duration * 0.034 / 2;
 }
 
-void resetSimulation() {
-  totalExposures = 0;
-  highRiskCount = 0;
-  warningCount = 0;
-  safeCount = 0;
-  simulationStartTime = millis();
+// ----------------------
+// SERIAL LOGGING FUNCTION
+// ----------------------
+void logData(const char* stateName, bool motion) {
+  unsigned long t = millis();
 
-  Serial.println("=== SIMULATION RESET ===");
-
-  // Flash LEDs
-  for (int i = 0; i < 3; i++) {
-    digitalWrite(GREEN_LED, HIGH);
-    digitalWrite(YELLOW_LED, HIGH);
-    digitalWrite(RED_LED, HIGH);
-    delay(200);
-    digitalWrite(GREEN_LED, LOW);
-    digitalWrite(YELLOW_LED, LOW);
-    digitalWrite(RED_LED, LOW);
-    delay(200);
-  }
-}
-
-void updateDisplay() {
-  display.clearDisplay();
-
-  // Header
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0, 0);
-  display.print("Distance Detector");
-
-  display.drawLine(0, 10, 127, 10, SSD1306_WHITE);
-
-  // Distance
-  display.setCursor(0, 14);
-  display.print("Distance: ");
-  if (currentDistance >= 999) {
-    display.print("NO ECHO");
-  } else if (currentDistance > 200) {
-    display.print(">200 cm");
+  if (csvMode) {
+    // CSV: time,distance,pir,state
+    Serial.print(t); Serial.print(",");
+    Serial.print(distance); Serial.print(",");
+    Serial.print(motion); Serial.print(",");
+    Serial.println(stateName);
   } else {
-    display.print((int)currentDistance);
-    display.print(" cm");
+    // Color-coded readable output
+    Serial.print(CYAN);
+    Serial.print("["); Serial.print(t); Serial.print(" ms] ");
+    Serial.print(RESET);
+
+    Serial.print(YELLOW);
+    Serial.print("STATE: ");
+    Serial.print(stateName);
+    Serial.print(" | ");
+    Serial.print(RESET);
+
+    Serial.print(GREEN);
+    Serial.print("Dist: ");
+    Serial.print(distance);
+    Serial.print(" cm | ");
+    Serial.print(RESET);
+
+    Serial.print(motion ? RED : GREEN);
+    Serial.print("PIR: ");
+    Serial.println(motion ? "MOTION" : "STILL");
+    Serial.print(RESET);
   }
-
-  // Status
-  display.setCursor(0, 24);
-  display.print("Status: ");
-  if (currentDistance >= 999) {
-    display.print("SENSOR ERR");
-  } else if (currentDistance < 100) {
-    display.print("HIGH RISK");
-  } else if (currentDistance < 200) {
-    display.print("WARNING");
-  } else {
-    display.print("SAFE");
-  }
-
-  // Stats
-  display.setCursor(0, 37);
-  display.print("Exposures: ");
-  display.print(totalExposures);
-
-  display.setCursor(0, 47);
-  display.print("HighRisk: ");
-  display.print(highRiskCount);
-  display.print("  Warn: ");
-  display.print(warningCount);
-
-  // Time
-  unsigned long runTime = (millis() - simulationStartTime) / 1000;
-  display.setCursor(0, 57);
-  display.print("Time: ");
-  display.print(runTime / 60);
-  display.print("m ");
-  display.print(runTime % 60);
-  display.print("s");
-
-  display.display();
 }
 
-void setLEDsAndBuzzer(String status) {
-  digitalWrite(GREEN_LED, LOW);
-  digitalWrite(YELLOW_LED, LOW);
-  digitalWrite(RED_LED, LOW);
+// ----------------------
+// EMERGENCY MODE
+// ----------------------
+void runEmergencyMode() {
+  digitalWrite(RED_LED, (millis() % 400 < 200));
+  tone(BUZZER, 2500);
+
+  if (millis() - lcdTimer > 500) {
+    lcd.setCursor(0,0); lcd.print("!! EMERGENCY !! ");
+    lcd.setCursor(0,1); lcd.print("SYSTEM LOCKED   ");
+    lcd.clear();
+    lcdTimer = millis();
+  }
+
+  logData("EMERGENCY", false);
+}
+
+// ----------------------
+// IDLE MODE
+// ----------------------
+void runIdleMode() {
+  digitalWrite(GREEN_LED, (millis() % 2000 < 100));
   noTone(BUZZER);
 
-  if (status == "HIGH_RISK") {
-    digitalWrite(RED_LED, HIGH);
-    tone(BUZZER, 2000);
+  if (millis() - lcdTimer > 500) {
+    lcd.setCursor(0,0); lcd.print("  SYSTEM READY  ");
+    lcd.setCursor(0,1); lcd.print(" PRESS CONFIRM  ");
+    lcdTimer = millis();
   }
-  else if (status == "WARNING") {
-    digitalWrite(YELLOW_LED, HIGH);
-    tone(BUZZER, 1000);
-  }
-  else if (status == "SAFE") {
-    digitalWrite(GREEN_LED, HIGH);
-  }
-  else if (status == "ERROR") {
-    digitalWrite(RED_LED, HIGH);
-    tone(BUZZER, 300);
-  }
+
+  logData("IDLE", false);
 }
 
+// ----------------------
+// MONITORING MODE
+// ----------------------
+void runMonitoringMode() {
+  distance = getDistance();
+  bool motion = digitalRead(PIR_PIN);
+
+  // LED Logic
+  if (distance < 100) {
+    digitalWrite(RED_LED, HIGH);
+    digitalWrite(GREEN_LED, LOW);
+    tone(BUZZER, 1000);
+  } else {
+    digitalWrite(RED_LED, LOW);
+    digitalWrite(GREEN_LED, HIGH);
+    noTone(BUZZER);
+  }
+
+  if (millis() - lcdTimer > 300) {
+    lcd.setCursor(0,0);
+    lcd.print("Dist: "); lcd.print((int)distance); lcd.print("cm   ");
+    lcd.setCursor(0,1);
+    lcd.print("PIR: "); lcd.print(motion ? "MOTION " : "STILL  ");
+    lcdTimer = millis();
+  }
+
+  logData("MONITORING", motion);
+}
+
+// ----------------------
+// MAIN LOOP
+// ----------------------
 void loop() {
-  // Reset button
+  if (digitalRead(CONFIRM_BTN) == LOW) active = true;
+  if (digitalRead(EMERGENCY_BTN) == LOW) emergency = true;
+
   if (digitalRead(RESET_BTN) == LOW) {
-    if (millis() - lastBtnPress > debounceDelay) {
-      resetSimulation();
-      lastBtnPress = millis();
-    }
+    active = false;
+    emergency = false;
+    noTone(BUZZER);
+    digitalWrite(RED_LED, LOW);
+    digitalWrite(YELLOW_LED, LOW);
+    digitalWrite(GREEN_LED, LOW);
+    lcd.clear();
   }
 
-  // PIR
-  personPresent = digitalRead(PIR_PIN);
-
-  // Distance
-  previousDistance = currentDistance;
-  currentDistance = getDistance();
-
-  // Determine status
-  String status = "";
-  if (currentDistance >= 999) status = "ERROR";
-  else if (currentDistance < 100) status = "HIGH_RISK";
-  else if (currentDistance < 200) status = "WARNING";
-  else status = "SAFE";
-
-  // Exposure counting
-  if (personPresent && status != "ERROR") {
-    if (status != lastStatus) {
-      totalExposures++;
-
-      if (status == "HIGH_RISK") highRiskCount++;
-      else if (status == "WARNING") warningCount++;
-      else if (status == "SAFE") safeCount++;
-    }
+  if (emergency) {
+    runEmergencyMode();
+  } else if (!active) {
+    runIdleMode();
+  } else {
+    runMonitoringMode();
   }
-
-  lastStatus = status;
-
-  // Outputs
-  setLEDsAndBuzzer(status);
-  updateDisplay();
-
-  delay(200);
 }
 
