@@ -21,6 +21,7 @@ bool emergency = false;
 float distance = 0;
 unsigned long lcdTimer = 0;
 
+<<<<<<< HEAD
 // CSV or Human-readable mode
 bool csvMode = false;
 
@@ -30,6 +31,10 @@ bool csvMode = false;
 #define YELLOW  "\033[33m"
 #define CYAN    "\033[36m"
 #define RESET   "\033[0m"
+=======
+// CSV mode always ON for dashboard
+bool csvMode = true;
+>>>>>>> 10fd9f398c8764364fadf661707e8015f01f95f6
 
 void setup() {
   lcd.begin(16, 2);
@@ -42,6 +47,10 @@ void setup() {
   pinMode(YELLOW_LED, OUTPUT);
   pinMode(GREEN_LED, OUTPUT);
   pinMode(BUZZER, OUTPUT);
+<<<<<<< HEAD
+=======
+
+>>>>>>> 10fd9f398c8764364fadf661707e8015f01f95f6
   // Input Setup
   pinMode(PIR_PIN, INPUT);
   pinMode(CONFIRM_BTN, INPUT_PULLUP);
@@ -77,6 +86,7 @@ float getDistance() {
 void logData(const char* stateName, bool motion) {
   unsigned long t = millis();
 
+<<<<<<< HEAD
  bool csvMode = true;  // make sure this is true
 
 void logData(const char* stateName, bool motion) {
@@ -107,6 +117,14 @@ void logData(const char* stateName, bool motion) {
     Serial.print("PIR: ");
     Serial.println(motion ? "MOTION" : "STILL");
     Serial.print(RESET);
+=======
+  if (csvMode) {
+    // CSV FORMAT: time,distance,pir,state
+    Serial.print(t); Serial.print(",");
+    Serial.print(distance); Serial.print(",");
+    Serial.print(motion); Serial.print(",");
+    Serial.println(stateName);
+>>>>>>> 10fd9f398c8764364fadf661707e8015f01f95f6
   }
 }
 
@@ -195,48 +213,5 @@ void loop() {
     runIdleMode();
   } else {
     runMonitoringMode();
-  }
-}
-
-void runEmergencyMode() {
-  digitalWrite(RED_LED, (millis() % 400 < 200));
-  tone(BUZZER, 2500);
-  if (millis() - lcdTimer > 500) {
-    lcd.setCursor(0,0); lcd.print("!! EMERGENCY !! ");
-    lcd.setCursor(0,1); lcd.print("SYSTEM LOCKED   ");
-    lcd.clear(); // Prevents gibberish buildup
-    lcdTimer = millis();
-  }
-}
-
-void runIdleMode() {
-  digitalWrite(GREEN_LED, (millis() % 2000 < 100));
-  noTone(BUZZER);
-  if (millis() - lcdTimer > 500) {
-    lcd.setCursor(0,0); lcd.print("  SYSTEM READY  ");
-    lcd.setCursor(0,1); lcd.print(" PRESS CONFIRM  ");
-    lcdTimer = millis();
-  }
-}
-
-void runMonitoringMode() {
-  distance = getDistance();
-  bool motion = digitalRead(PIR_PIN);
-
-  // LED Logic
-  if (distance < 100) {
-    digitalWrite(RED_LED, HIGH); digitalWrite(GREEN_LED, LOW);
-    tone(BUZZER, 1000);
-  } else {
-    digitalWrite(RED_LED, LOW); digitalWrite(GREEN_LED, HIGH);
-    noTone(BUZZER);
-  }
-
-  if (millis() - lcdTimer > 300) {
-    lcd.setCursor(0,0);
-    lcd.print("Dist: "); lcd.print((int)distance); lcd.print("cm   ");
-    lcd.setCursor(0,1);
-    lcd.print("PIR: "); lcd.print(motion ? "MOTION " : "STILL  ");
-    lcdTimer = millis();
   }
 }
