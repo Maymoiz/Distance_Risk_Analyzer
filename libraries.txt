@@ -1,7 +1,4 @@
-# Wokwi Library List
-# See https://docs.wokwi.com/guides/libraries
-
+# tinkercad Library List
+# https://docs.arduino.cc/libraries/liquidcrystal
 # Automatically added based on includes:
-Adafruit GFX Library
-
-Adafruit SSD1306
+LiquidCrystal
